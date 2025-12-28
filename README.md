@@ -6,6 +6,7 @@ This is a template repository setup with modern Python tooling:
 - **Linting & Formatting**: [Ruff](https://github.com/astral-sh/ruff)
 - **Type Checking**: [mypy](https://mypy-lang.org/)
 - **Testing**: [pytest](https://docs.pytest.org/)
+- **Quality Checks**: [pre-commit](https://pre-commit.com/)
 
 ## Setup
 
@@ -22,28 +23,27 @@ This is a template repository setup with modern Python tooling:
     uv sync
     ```
 
+3.  **Setup Pre-commit** (Optional but recommended):
+    ```sh
+    # This installs the git hook to run checks before every commit
+    uv run pre-commit install
+    ```
+
 ## Development Workflow
 
-Before committing your code, run the following commands to ensure it meets quality standards. These checks are also run automatically in CI.
+### Running Checks Manually
 
-1.  **Lint & Format**:
-    ```sh
-    uv run ruff check . --fix
-    uv run ruff format .
-    ```
+You can use `pre-commit` to run all quality checks (linting, formatting, types, tests) at once. This ensures your code is ready for CI.
 
-2.  **Type Check**:
-    ```sh
-    uv run mypy .
-    ```
-
-3.  **Run Tests**:
-    ```sh
-    uv run pytest
-    ```
-
-### One-liner for all checks
-You can run all checks in sequence with this command:
 ```sh
-uv run ruff check . --fix && uv run ruff format . && uv run mypy . && uv run pytest
+uv run pre-commit run --all-files
 ```
+
+### Individual Tools
+
+If you need to run tools individually during debugging:
+
+- **Test**: `uv run pytest`
+- **Lint**: `uv run ruff check .`
+- **Format**: `uv run ruff format .`
+- **Type Check**: `uv run mypy .`
