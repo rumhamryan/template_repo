@@ -41,8 +41,25 @@ line-length = 88
 target-version = "py312"
 
 [tool.ruff.lint]
-select = ["E", "F", "I", "N", "W"]
-ignore = []
+# Start from a known baseline; adjust based on your existing config.
+select = [
+  "E", "F",          # pycodestyle + pyflakes
+  "B",              # bugbear
+  "I",              # import sorting
+  "UP",             # pyupgrade
+  "SIM",            # simplify
+  "PLR",            # pylint refactor rules (god-function controls live here)
+]
+
+[tool.ruff.lint.pylint]
+# Tune these to your “minimum bar”
+max-statements = 30
+max-branches = 10
+max-locals = 12
+max-nested-blocks = 4
+max-args = 6
+max-positional-args = 4
+max-bool-expr = 4
 
 [tool.mypy]
 python_version = "3.12"
@@ -57,3 +74,4 @@ testpaths = [
 ]
 pythonpath = ["src"]
 asyncio_mode = "auto"
+asyncio_default_fixture_loop_scope = "function"

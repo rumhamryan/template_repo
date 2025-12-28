@@ -17,7 +17,7 @@ This is a template repository setup with modern Python tooling:
     ```sh
     # Example: Create a CLI app named 'my_cool_tool'
     python scripts/setup_project.py --name my_cool_tool --type cli
-    
+
     # Available types: library, cli, service
     ```
 
