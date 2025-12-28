@@ -182,40 +182,34 @@ def remove_git_remote(dry_run: bool) -> None:
             print(f"warning: failed to remove git remote origin: {e}")
 
 
-def update_gemini_manifest(
-    package_name: str, project_type: str, *, dry_run: bool
-) -> None:
-    manifest_path = Path.cwd() / "GEMINI.md"
-    if not manifest_path.exists():
-        print("warning: GEMINI.md not found, skipping architecture doc update.")
-        return
-
-    log("update", manifest_path, dry_run)
-    if dry_run:
-        return
+def update_manifests(package_name: str, project_type: str, *, dry_run: bool) -> None:
+    manifests = ["GEMINI.md", "CODEX.md"]
 
     # Specific architecture block to insert
     arch_block = ARCH_DOCS.get(project_type, "").format(package_name=package_name)
-
-    # The new section content replcing the generic "src/" line
-    # We keep the outer structure but replace the inside of src/
     replacement_tree = f"""├── src/                 # Source code
 {arch_block}"""
 
-    content = manifest_path.read_text(encoding="utf-8")
-
     # Regex to replace the generic 'src/' placeholder line.
-    # simplified: we just look for the specific placeholder line from the template.
-    # Current template has:
-    # "├── src/                 # Source code (populated by setup script)"
-
     pattern = r"(├── src/.*\(populated by setup script\))"
 
-    if re.search(pattern, content):
-        new_content = re.sub(pattern, replacement_tree.strip(), content)
-        manifest_path.write_text(new_content, encoding="utf-8")
-    else:
-        print("  (could not find generic src/ placeholder in GEMINI.md)")
+    for manifest_name in manifests:
+        manifest_path = Path.cwd() / manifest_name
+        if not manifest_path.exists():
+            print(f"warning: {manifest_name} not found, skipping update.")
+            continue
+
+        log("update", manifest_path, dry_run)
+        if dry_run:
+            continue
+
+        content = manifest_path.read_text(encoding="utf-8")
+
+        if re.search(pattern, content):
+            new_content = re.sub(pattern, replacement_tree.strip(), content)
+            manifest_path.write_text(new_content, encoding="utf-8")
+        else:
+            print(f"  (could not find generic src/ placeholder in {manifest_name})")
 
 
 def print_tree(directory: Path, prefix: str = "") -> None:
@@ -289,7 +283,7 @@ def main() -> None:
     cleanup_legacy(root, dry_run=dry_run)
     setup_environment(dry_run)
     remove_git_remote(dry_run)
-    update_gemini_manifest(package_name, project_type, dry_run=dry_run)
+    update_manifests(package_name, project_type, dry_run=dry_run)
 
     print_final_report(
         package_name, project_type, project_name, src_pkg, tests_pkg, dry_run

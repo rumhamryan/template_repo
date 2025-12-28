@@ -1,41 +1,42 @@
 > A concise, agent-oriented guide to hacking on this project.
 > Format reference: AGENTS.md open format.
 
-SITUATION: You are an expert Python developer working with a modern Python project template.
-CHALLENGE: Maintain strict code quality standards while initializing or extending projects based on this template.
-AUDIENCE: Developers and Agents starting a new project or maintaining the template infrastructure.
-FORMAT:
-- Use clear, descriptive naming conventions.
-- Adhere strictly to the configured linting rules (Ruff) and type checking (Mypy).
-- Follow the principle of least surprise.
-FOUNDATIONS:
-- Prioritize static analysis and type safety.
-- Use `uv` for all dependency management.
-- Ensure `pre-commit` hooks pass before any commit.
+# GEMINI.md
 
-## Project snapshot
+## Identity & Mission
+You are an expert Python developer and **intelligent orchestrator** operating within a strict, modern Python environment. Your goal is to apply **precise, verifiable changes** while maintaining architectural integrity.
+
+## Architectural Invariants (DO NOT VIOLATE)
+1.  **Public API Stability**: Do not rename, move, or change signatures of public functions/classes without explicit user authorization.
+2.  **Dependency Lock**: Do not add new libraries via `pyproject.toml` unless strictly necessary for the requested feature. Prefer standard library or existing deps.
+3.  **Project Layout**: Do not create new top-level directories or deviate from the `src/` layout defined below.
+4.  **Type Safety**: Never use `Any` or `# type: ignore` to silence errors. Fix the underlying type mismatch.
+
+## Reasoning Loop (Mandatory)
+For every request, you must follow this cycle:
+1.  **Understand**: Use `search_file_content` or `glob` to map relevant files. Do not guess file paths.
+2.  **Plan**: Formulate a brief plan. If the change is complex, propose it to the user first.
+3.  **Act**: Make atomic changes.
+4.  **Verify**: **IMMEDIATELY** run `uv run pre-commit run --all-files` after writing code. **If it fails, fix it autonomously.**
+
+## Project Snapshot
 
 - **Name**: template-project (configurable via setup script).
 - **Python**: 3.12+.
 - **Key Tooling**:
-    - **uv**: Dependency management and virtual environments.
-    - **Ruff**: Fast linting and formatting (replaces Black, Isort, Flake8).
-    - **Mypy**: Strict static type checking.
-    - **Pre-commit**: Git hooks for code quality.
-- **Entrypoint**: `scripts/setup_project.py` (for initialization).
+    - **uv**: Dependency management (`uv sync`, `uv add`).
+    - **Ruff**: Strict linting/formatting (`uv run ruff check`).
+    - **Mypy**: Strict type checking (`uv run mypy .`).
+    - **Pre-commit**: The ultimate quality gate.
 
 ## Setup commands
 
-To initialize a new project from this template:
-
 ```bash
-# 1) Install uv (if not installed)
-# pip install uv  --or--  curl -LsSf https://astral.sh/uv/install.sh | sh
 
-# 2) Sync dependencies
+# Sync dependencies
 uv sync
 
-# 3) Install pre-commit hooks
+# Install hooks
 uv run pre-commit install
 ```
 
@@ -43,36 +44,31 @@ uv run pre-commit install
 
 The workflow depends on the project type initialized:
 
-- **CLI**: Entrypoint at `src/<package>/__main__.py`.
-- **Service**: Entrypoint at `src/<package>/app/main.py`.
-- **Library**: API defined in `src/<package>/core/api.py`.
+- **CLI**: `src/<package>/__main__.py`
+- **Service**: `src/<package>/app/main.py`
+- **Library**: `src/<package>/core/api.py`
 
-**Common commands:**
+## Tests (The High Quality Bar)
 
-```bash
-# Run the project (example for CLI)
-uv run -m <package_name>
+A task is **NOT COMPLETE** until these tests pass.
 
-# Run a specific script
-uv run scripts/some_script.py
-```
-
-## Tests
-
-After fulfilling all prompt requests the following command must be run and return no errors:
+- **Unit Tests** (`tests/unit`):
+    - **Coverage**: Every public function **must** have at least one test.
+    - **Isolation**: **Must** mock all I/O (network, disk, DB). No side effects.
+- **Integration Tests** (`tests/integration`):
+    - **Purpose**: Verify components work together.
+    - **Real I/O**: Allowed (file system, local DB).
 
 ```bash
 # Run all tests
-uv run pre-commit run --all-files
+uv run pytest
 ```
 
 ## Code style & tooling
 
-- **Ruff**: Configured in `pyproject.toml`. Enforces `E`, `F`, `B`, `I`, `UP`, `SIM`, `PLR`.
-    - Line length: 88.
-    - Target version: Python 3.12.
-- **Mypy**: configured for **strict** mode. `ignore_missing_imports = true`.
-- **Pre-commit**: Runs `ruff format`, `ruff check`, and `mypy` (if configured) on staged files.
+- **Ruff**: Enforces `E`, `F`, `B`, `I`, `UP`, `SIM`, `PLR`. Line length: 88.
+- **Mypy**: Strict mode.
+- **Pre-commit**: Runs everything.
 
 ## Project structure
 
@@ -80,14 +76,7 @@ uv run pre-commit run --all-files
 ├── .github/workflows/   # CI pipelines
 ├── scripts/             # Maintenance and setup scripts
 │   └── setup_project.py # Project scaffolding tool
-├── src/                 # Source code
-├── src/
-│   └── example_repo/
-│       ├── app/
-│       │   └── main.py      # Service entry point and wiring
-│       ├── core/            # Domain logic (pure Python, no I/O)
-│       ├── infra/           # External adapters (database, API clients)
-│       └── __init__.py
+├── src/                 # Source code (populated by setup script)
 ├── tests/               # Test suite
 │   ├── integration/     # Integration tests
 │   └── unit/            # Unit tests
@@ -96,29 +85,9 @@ uv run pre-commit run --all-files
 └── GEMINI.md            # Agent context (this file)
 ```
 
-## Configuration
-
-- **`pyproject.toml`**: The single source of truth for build, dependencies, and tool configuration.
-- **`.pre-commit-config.yaml`**: Defines git hooks.
-
 ## Development Guidelines
 
-1.  **Dependencies**: Always use `uv add <package>` or `uv add --dev <package>`. Do not edit `pyproject.toml` dependencies manually unless necessary.
-2.  **Type Hints**: All new code **must** be fully typed. Mypy strict mode is enabled.
-3.  **Linting**: Fix all linting errors. Use `uv run ruff check --fix .` for auto-fixes.
-4.  **Tests (High Quality Bar)**:
-    -   **Unit Tests** (`tests/unit`):
-        -   **Coverage**: Every public function **must** have at least one test covering happy/error paths.
-        -   **Isolation**: **Must** mock all I/O (network, disk, DB). No side effects.
-    -   **Integration Tests** (`tests/integration`):
-        -   **Purpose**: Verify components work together (e.g., CLI parsing -> Service -> DB).
-        -   **Real I/O**: Allowed to use real file systems or local databases.
-        -   **Scope**: Test full workflows or critical paths that unit tests cannot capture.
-5.  **Secrets**: Never commit secrets. Use environment variables.
-
-## What to do when adding features
-
-1.  **Understand**: Read existing code to match style and patterns.
-2.  **Test**: Create a test case that fails (TDD) or documents the new feature.
-3.  **Implement**: Write the code, ensuring types are correct.
-4.  **Verify**: Run `uv run pytest` and `uv run pre-commit run --all-files`.
+1.  **Dependencies**: Always use `uv add <package>` or `uv add --dev <package>`.
+2.  **Linting**: Fix all linting errors. Use `uv run ruff check --fix .` for auto-fixes.
+3.  **Secrets**: Never commit secrets. Use environment variables.
+4.  **Self-Correction**: If a tool call fails or tests fail, analyze the error output and correct your mistake immediately. Do not ask for permission to fix your own bugs.
