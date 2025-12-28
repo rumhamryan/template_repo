@@ -165,6 +165,44 @@ def setup_environment(dry_run: bool) -> None:
             print(f"warning: failed to install pre-commit hooks: {e}")
 
 
+def print_tree(directory: Path, prefix: str = "") -> None:
+    """Recursively prints a visual tree of the directory structure."""
+    if not directory.exists():
+        return
+
+    entries = sorted(directory.iterdir(), key=lambda e: (e.is_file(), e.name))
+    for i, entry in enumerate(entries):
+        is_last = i == len(entries) - 1
+        connector = "|__ " if is_last else "|-- "
+        print(f"{prefix}{connector}{entry.name}")
+        if entry.is_dir():
+            new_prefix = prefix + ("    " if is_last else "|   ")
+            print_tree(entry, new_prefix)
+
+
+def print_final_report(
+    package_name: str,
+    project_type: str,
+    project_name: str,
+    src_pkg: Path,
+    tests_pkg: Path,
+    dry_run: bool,
+) -> None:
+    mode = "DRY RUN" if dry_run else "CREATED"
+    print(f"\n{mode}: initialized {project_type} project '{package_name}'.")
+    print(f"         updated pyproject.toml name to '{project_name}'")
+
+    print("\nGenerated Structure:")
+    print(f"src/{package_name}")
+    print_tree(src_pkg, "  ")
+    print(f"\ntests/{package_name}")
+    print_tree(tests_pkg, "  ")
+
+    print(f"\n{mode}:  Next steps:")
+    print("          1. Review 'description' and 'dependencies' in pyproject.toml")
+    print("          2. Start coding!")
+
+
 def main() -> None:
     parser = argparse.ArgumentParser(description="Initialize project structure.")
     parser.add_argument("--name", required=True, help="Python package name")
@@ -178,8 +216,8 @@ def main() -> None:
     args = parser.parse_args()
     package_name, project_type, dry_run = args.name, args.type, args.dry_run
     root = Path.cwd()
-    src_pkg = root / "src" / package_name
-    tests_root, tests_pkg = (
+    src_pkg, tests_root, tests_pkg = (
+        root / "src" / package_name,
         root / "tests",
         root / "tests" / package_name,
     )
@@ -198,11 +236,9 @@ def main() -> None:
     cleanup_legacy(root, dry_run=dry_run)
     setup_environment(dry_run)
 
-    mode = "DRY RUN" if dry_run else "CREATED"
-    print(
-        f"\n{mode}: initialized {project_type} project structure for '{package_name}'."
+    print_final_report(
+        package_name, project_type, project_name, src_pkg, tests_pkg, dry_run
     )
-    print(f"         updated pyproject.toml name to '{project_name}'")
 
 
 if __name__ == "__main__":
