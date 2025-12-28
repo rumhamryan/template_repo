@@ -34,9 +34,9 @@ This is a template repository setup with modern Python tooling:
     uv sync
     ```
 
-5.  **Setup Pre-commit** (Optional but recommended):
+5.  **Setup Pre-commit** (Required):
+    This installs the git hook to run checks before every commit.
     ```sh
-    # This installs the git hook to run checks before every commit
     uv run pre-commit install
     ```
 

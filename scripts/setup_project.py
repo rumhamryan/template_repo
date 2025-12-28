@@ -186,6 +186,17 @@ def main() -> None:
     create_tests_layout(tests_root, tests_pkg, project_type, dry_run)
     cleanup_legacy(root, dry_run=dry_run)
 
+    # ------------------------------------------------------------------
+    # Environment Setup
+    # ------------------------------------------------------------------
+    if not dry_run:
+        print("\nInstalling pre-commit hooks...")
+        try:
+            import subprocess
+            subprocess.run(["uv", "run", "pre-commit", "install"], check=True)
+        except Exception as e:
+            print(f"warning: failed to install pre-commit hooks: {e}")
+
     mode = "DRY RUN" if dry_run else "CREATED"
     print(
         f"\n{mode}: initialized {project_type} project structure for '{package_name}'."
