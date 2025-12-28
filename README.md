@@ -6,7 +6,6 @@ This is a template repository setup with modern Python tooling:
 - **Linting & Formatting**: [Ruff](https://github.com/astral-sh/ruff)
 - **Type Checking**: [mypy](https://mypy-lang.org/)
 - **Testing**: [pytest](https://docs.pytest.org/)
-- **CI/Hooks**: [pre-commit](https://pre-commit.com/)
 
 ## Setup
 
@@ -23,17 +22,28 @@ This is a template repository setup with modern Python tooling:
     uv sync
     ```
 
-3.  **Setup Pre-commit**:
-    ```sh
-    # Activate virtual environment if not already
-    # source .venv/bin/activate  # or .venv\Scripts\activate on Windows
+## Development Workflow
 
-    pre-commit install
+Before committing your code, run the following commands to ensure it meets quality standards. These checks are also run automatically in CI.
+
+1.  **Lint & Format**:
+    ```sh
+    uv run ruff check . --fix
+    uv run ruff format .
     ```
 
-## Development
+2.  **Type Check**:
+    ```sh
+    uv run mypy .
+    ```
 
-- **Run Tests**: `uv run pytest`
-- **Run Linter**: `uv run ruff check .`
-- **Run Formatter**: `uv run ruff format .`
-- **Type Check**: `uv run mypy .`
+3.  **Run Tests**:
+    ```sh
+    uv run pytest
+    ```
+
+### One-liner for all checks
+You can run all checks in sequence with this command:
+```sh
+uv run ruff check . --fix && uv run ruff format . && uv run mypy . && uv run pytest
+```
