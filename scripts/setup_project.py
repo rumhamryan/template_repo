@@ -1,10 +1,36 @@
 import argparse
 import re
 import shutil
+import subprocess
 import sys
 from pathlib import Path
 
 PROJECT_TYPES = {"library", "cli", "service"}
+
+# Agent documentation templates for specific project types
+ARCH_DOCS = {
+    "library": """├── src/
+│   └── {package_name}/
+│       ├── core/
+│       │   └── api.py       # Public API surface
+│       └── __init__.py
+""",
+    "cli": """├── src/
+│   └── {package_name}/
+│       ├── app/
+│       │   └── cli.py       # CLI entry points and command routing
+│       ├── core/            # Domain logic (pure Python, no I/O)
+│       └── __main__.py      # Execution entry point
+""",
+    "service": """├── src/
+│   └── {package_name}/
+│       ├── app/
+│       │   └── main.py      # Service entry point and wiring
+│       ├── core/            # Domain logic (pure Python, no I/O)
+│       ├── infra/           # External adapters (database, API clients)
+│       └── __init__.py
+""",
+}
 
 
 def die(message: str) -> None:
@@ -21,9 +47,6 @@ def touch_init(path: Path, *, dry_run: bool) -> None:
     if path.exists():
         return
 
-    # log("dir", path, dry_run)
-    # log("file", path / "__init__.py", dry_run)
-
     if not dry_run:
         path.mkdir(parents=True, exist_ok=True)
         (path / "__init__.py").touch(exist_ok=True)
@@ -32,8 +55,6 @@ def touch_init(path: Path, *, dry_run: bool) -> None:
 def create_file(path: Path, content: str, *, dry_run: bool) -> None:
     if path.exists():
         die(f"Refusing to overwrite existing file: {path}")
-
-    # log("file", path, dry_run)
 
     if not dry_run:
         path.write_text(content, encoding="utf-8")
@@ -138,22 +159,63 @@ def create_tests_layout(
         if not test_dir.exists() and not dry_run:
             test_dir.mkdir(parents=True, exist_ok=True)
 
-    create_file(
-        tests_root / "unit" / "test_smoke.py",
-        "def test_smoke() -> None:\n    assert True\n",
-        dry_run=dry_run,
-    )
-
 
 def setup_environment(dry_run: bool) -> None:
     if not dry_run:
         print("\nInstalling pre-commit hooks...")
         try:
-            import subprocess
-
             subprocess.run(["uv", "run", "pre-commit", "install"], check=True)
         except Exception as e:
             print(f"warning: failed to install pre-commit hooks: {e}")
+
+
+def remove_git_remote(dry_run: bool) -> None:
+    if not dry_run:
+        print("\nRemoving git remote origin...")
+        try:
+            subprocess.run(
+                ["git", "remote", "remove", "origin"], check=True, capture_output=True
+            )
+        except subprocess.CalledProcessError:
+            print("warning: git remote 'origin' not found or already removed.")
+        except Exception as e:
+            print(f"warning: failed to remove git remote origin: {e}")
+
+
+def update_gemini_manifest(
+    package_name: str, project_type: str, *, dry_run: bool
+) -> None:
+    manifest_path = Path.cwd() / "GEMINI.md"
+    if not manifest_path.exists():
+        print("warning: GEMINI.md not found, skipping architecture doc update.")
+        return
+
+    log("update", manifest_path, dry_run)
+    if dry_run:
+        return
+
+    # Specific architecture block to insert
+    arch_block = ARCH_DOCS.get(project_type, "").format(package_name=package_name)
+
+    # The new section content replcing the generic "src/" line
+    # We keep the outer structure but replace the inside of src/
+    replacement_tree = f"""├── src/                 # Source code
+{arch_block}"""
+
+    content = manifest_path.read_text(encoding="utf-8")
+
+    # Regex to replace the generic 'src/' placeholder line.
+    # simplified: we just look for the specific placeholder line from the template.
+    # Current template has:
+    # "├── src/                 # Source code (populated by setup script)"
+
+    pattern = r"(├── src/.*\(populated by setup script\))"
+
+    if re.search(pattern, content):
+        new_content = re.sub(pattern, replacement_tree.strip(), content)
+        manifest_path.write_text(new_content, encoding="utf-8")
+    else:
+        print("  (could not find generic src/ placeholder in GEMINI.md)")
 
 
 def print_tree(directory: Path, prefix: str = "") -> None:
@@ -191,6 +253,7 @@ def print_final_report(
         print_tree(src_pkg, "  ")
         print("\ntests/")
         print_tree(Path("tests"), "  ")
+        print("")
 
 
 def main() -> None:
@@ -225,6 +288,8 @@ def main() -> None:
     create_tests_layout(tests_root, tests_pkg, project_type, dry_run)
     cleanup_legacy(root, dry_run=dry_run)
     setup_environment(dry_run)
+    remove_git_remote(dry_run)
+    update_gemini_manifest(package_name, project_type, dry_run=dry_run)
 
     print_final_report(
         package_name, project_type, project_name, src_pkg, tests_pkg, dry_run
