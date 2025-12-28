@@ -8,9 +8,20 @@ This is a template repository setup with modern Python tooling:
 - **Testing**: [pytest](https://docs.pytest.org/)
 - **Quality Checks**: [pre-commit](https://pre-commit.com/)
 
-## Setup
+## Getting Started
 
-1.  **Install uv**:
+1.  **Clone the repository** (or use "Use this template").
+
+2.  **Initialize your project**:
+    Run the setup script to rename the project and create the directory structure.
+    ```sh
+    # Example: Create a CLI app named 'my_cool_tool'
+    python scripts/setup_project.py --name my_cool_tool --type cli
+    
+    # Available types: library, cli, service
+    ```
+
+3.  **Install uv**:
     ```sh
     # On macOS/Linux
     curl -LsSf https://astral.sh/uv/install.sh | sh
@@ -18,12 +29,12 @@ This is a template repository setup with modern Python tooling:
     powershell -c "irm https://astral.sh/uv/install.ps1 | iex"
     ```
 
-2.  **Install Dependencies**:
+4.  **Install Dependencies**:
     ```sh
     uv sync
     ```
 
-3.  **Setup Pre-commit** (Optional but recommended):
+5.  **Setup Pre-commit** (Optional but recommended):
     ```sh
     # This installs the git hook to run checks before every commit
     uv run pre-commit install
