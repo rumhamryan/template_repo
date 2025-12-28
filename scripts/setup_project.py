@@ -154,6 +154,24 @@ def create_tests_layout(
     )
 
 
+def setup_environment(dry_run: bool) -> None:
+    if not dry_run:
+        if shutil.which("uv"):
+            print("\nInstalling pre-commit hooks...")
+            try:
+                import subprocess
+
+                subprocess.run(["uv", "run", "pre-commit", "install"], check=True)
+            except Exception as e:
+                print(f"warning: failed to install pre-commit hooks: {e}")
+        else:
+            print("\nwarning: 'uv' not found. Skipping pre-commit installation.")
+            print(
+                "         Please install uv and run "
+                "'uv run pre-commit install' manually."
+            )
+
+
 def main() -> None:
     parser = argparse.ArgumentParser(description="Initialize project structure.")
     parser.add_argument("--name", required=True, help="Python package name")
@@ -167,8 +185,8 @@ def main() -> None:
     args = parser.parse_args()
     package_name, project_type, dry_run = args.name, args.type, args.dry_run
     root = Path.cwd()
-    src_pkg, tests_root, tests_pkg = (
-        root / "src" / package_name,
+    src_pkg = root / "src" / package_name
+    tests_root, tests_pkg = (
         root / "tests",
         root / "tests" / package_name,
     )
@@ -185,21 +203,12 @@ def main() -> None:
     create_type_specific_files(src_pkg, project_type, package_name, dry_run)
     create_tests_layout(tests_root, tests_pkg, project_type, dry_run)
     cleanup_legacy(root, dry_run=dry_run)
-
-    # ------------------------------------------------------------------
-    # Environment Setup
-    # ------------------------------------------------------------------
-    if not dry_run:
-        print("\nInstalling pre-commit hooks...")
-        try:
-            import subprocess
-            subprocess.run(["uv", "run", "pre-commit", "install"], check=True)
-        except Exception as e:
-            print(f"warning: failed to install pre-commit hooks: {e}")
+    setup_environment(dry_run)
 
     mode = "DRY RUN" if dry_run else "CREATED"
     print(
-        f"\n{mode}: initialized {project_type} project structure for '{package_name}'."
+        f"\n{mode}: initialized {project_type} "
+        f"project structure for '{package_name}'."
     )
     print(f"         updated pyproject.toml name to '{project_name}'")
 
