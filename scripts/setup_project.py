@@ -21,8 +21,8 @@ def touch_init(path: Path, *, dry_run: bool) -> None:
     if path.exists():
         return
 
-    log("dir", path, dry_run)
-    log("file", path / "__init__.py", dry_run)
+    # log("dir", path, dry_run)
+    # log("file", path / "__init__.py", dry_run)
 
     if not dry_run:
         path.mkdir(parents=True, exist_ok=True)
@@ -33,7 +33,7 @@ def create_file(path: Path, content: str, *, dry_run: bool) -> None:
     if path.exists():
         die(f"Refusing to overwrite existing file: {path}")
 
-    log("file", path, dry_run)
+    # log("file", path, dry_run)
 
     if not dry_run:
         path.write_text(content, encoding="utf-8")
@@ -129,26 +129,17 @@ def create_type_specific_files(
 def create_tests_layout(
     tests_root: Path, tests_pkg: Path, project_type: str, dry_run: bool
 ) -> None:
-    if not tests_root.exists():
-        log("dir", tests_root, dry_run)
-        if not dry_run:
-            tests_root.mkdir(parents=True, exist_ok=True)
+    if not tests_root.exists() and not dry_run:
+        tests_root.mkdir(parents=True, exist_ok=True)
 
-    if not tests_pkg.exists():
-        log("dir", tests_pkg, dry_run)
-        if not dry_run:
-            tests_pkg.mkdir(parents=True, exist_ok=True)
-
-    touch_init(tests_pkg / "core", dry_run=dry_run)
-
-    if project_type in {"cli", "service"}:
-        touch_init(tests_pkg / "app", dry_run=dry_run)
-
-    if project_type == "service":
-        touch_init(tests_pkg / "infra", dry_run=dry_run)
+    # Create distinct test types
+    for test_type in ["unit", "integration"]:
+        test_dir = tests_root / test_type
+        if not test_dir.exists() and not dry_run:
+            test_dir.mkdir(parents=True, exist_ok=True)
 
     create_file(
-        tests_pkg / "test_smoke.py",
+        tests_root / "unit" / "test_smoke.py",
         "def test_smoke() -> None:\n    assert True\n",
         dry_run=dry_run,
     )
@@ -170,14 +161,16 @@ def print_tree(directory: Path, prefix: str = "") -> None:
     if not directory.exists():
         return
 
-    entries = sorted(directory.iterdir(), key=lambda e: (e.is_file(), e.name))
+    # Filter for directories only
+    entries = sorted(
+        [e for e in directory.iterdir() if e.is_dir()], key=lambda e: e.name
+    )
     for i, entry in enumerate(entries):
         is_last = i == len(entries) - 1
         connector = "|__ " if is_last else "|-- "
         print(f"{prefix}{connector}{entry.name}")
-        if entry.is_dir():
-            new_prefix = prefix + ("    " if is_last else "|   ")
-            print_tree(entry, new_prefix)
+        new_prefix = prefix + ("    " if is_last else "|   ")
+        print_tree(entry, new_prefix)
 
 
 def print_final_report(
@@ -192,15 +185,12 @@ def print_final_report(
     print(f"\n{mode}: initialized {project_type} project '{package_name}'.")
     print(f"         updated pyproject.toml name to '{project_name}'")
 
-    print("\nGenerated Structure:")
-    print(f"src/{package_name}")
-    print_tree(src_pkg, "  ")
-    print(f"\ntests/{package_name}")
-    print_tree(tests_pkg, "  ")
-
-    print(f"\n{mode}:  Next steps:")
-    print("          1. Review 'description' and 'dependencies' in pyproject.toml")
-    print("          2. Start coding!")
+    if not dry_run:
+        print("\nGenerated Structure:")
+        print(f"src/{package_name}")
+        print_tree(src_pkg, "  ")
+        print("\ntests/")
+        print_tree(Path("tests"), "  ")
 
 
 def main() -> None:
