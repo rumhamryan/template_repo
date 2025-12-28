@@ -156,20 +156,13 @@ def create_tests_layout(
 
 def setup_environment(dry_run: bool) -> None:
     if not dry_run:
-        if shutil.which("uv"):
-            print("\nInstalling pre-commit hooks...")
-            try:
-                import subprocess
+        print("\nInstalling pre-commit hooks...")
+        try:
+            import subprocess
 
-                subprocess.run(["uv", "run", "pre-commit", "install"], check=True)
-            except Exception as e:
-                print(f"warning: failed to install pre-commit hooks: {e}")
-        else:
-            print("\nwarning: 'uv' not found. Skipping pre-commit installation.")
-            print(
-                "         Please install uv and run "
-                "'uv run pre-commit install' manually."
-            )
+            subprocess.run(["uv", "run", "pre-commit", "install"], check=True)
+        except Exception as e:
+            print(f"warning: failed to install pre-commit hooks: {e}")
 
 
 def main() -> None:

@@ -6,54 +6,45 @@ This is a template repository setup with modern Python tooling:
 - **Linting & Formatting**: [Ruff](https://github.com/astral-sh/ruff)
 - **Type Checking**: [mypy](https://mypy-lang.org/)
 - **Testing**: [pytest](https://docs.pytest.org/)
-- **Quality Checks**: [pre-commit](https://pre-commit.com/)
+- **Quality Checks Local**: [pre-commit](https://pre-commit.com/)
+- **Quality Checks Remote**: [Github Action](https://docs.github.com/en/actions)
 
 ## Getting Started
 
-1.  **Clone the repository** (or use "Use this template").
+### 1. Prerequisite: Install uv
+The project uses `uv` for fast dependency management. It is a required dependency.
+```sh
+# On macOS/Linux
+curl -LsSf https://astral.sh/uv/install.sh | sh
+# On Windows
+powershell -c "irm https://astral.sh/uv/install.ps1 | iex"
+```
 
-2.  **Initialize your project**:
-    Run the setup script to rename the project and create the directory structure.
-    ```sh
-    # Example: Create a CLI app named 'my_cool_tool'
-    python scripts/setup_project.py --name my_cool_tool --type cli
+### 2. Initialize Your Project
+Run the automated setup script. This will:
+- Rename the project in `pyproject.toml`.
+- Create your package directory structure.
+- Remove template placeholder files.
+- **Automatically install pre-commit git hooks.**
 
-    # Available types: library, cli, service
-    ```
+```sh
+# Clone the repo, then run:
+uv run scripts/setup_project.py --name my_project_name --type cli
 
-3.  **Install uv**:
-    ```sh
-    # On macOS/Linux
-    curl -LsSf https://astral.sh/uv/install.sh | sh
-    # On Windows
-    powershell -c "irm https://astral.sh/uv/install.ps1 | iex"
-    ```
-
-4.  **Install Dependencies**:
-    ```sh
-    uv sync
-    ```
-
-5.  **Setup Pre-commit** (Required):
-    This installs the git hook to run checks before every commit.
-    ```sh
-    uv run pre-commit install
-    ```
+# Available types: library, cli, service
+```
 
 ## Development Workflow
 
-### Running Checks Manually
+### Mandatory Quality Checks
+This project enforces quality standards via `pre-commit`.
 
-You can use `pre-commit` to run all quality checks (linting, formatting, types, tests) at once. This ensures your code is ready for CI.
-
+To run all checks manually (recommended before pushing):
 ```sh
 uv run pre-commit run --all-files
 ```
 
 ### Individual Tools
-
-If you need to run tools individually during debugging:
-
 - **Test**: `uv run pytest`
 - **Lint**: `uv run ruff check .`
 - **Format**: `uv run ruff format .`
