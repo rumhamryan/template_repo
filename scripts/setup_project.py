@@ -207,8 +207,7 @@ def main() -> None:
 
     mode = "DRY RUN" if dry_run else "CREATED"
     print(
-        f"\n{mode}: initialized {project_type} "
-        f"project structure for '{package_name}'."
+        f"\n{mode}: initialized {project_type} project structure for '{package_name}'."
     )
     print(f"         updated pyproject.toml name to '{project_name}'")
 
